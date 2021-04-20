@@ -41,7 +41,7 @@ jobs:
       - name: Running Scanner
         run: |
           nuclei -update-templates
-          subfinder -silent -dL input/domains.txt -config config/subfinder-config.yaml | anew output/passive_subdomains.txt | naabu -silent | httpx -title -content-length -status-code -silent | anew output/active_urls.txt | nuclei -silent -t cves/ -t default-logins/ -t exposed-panels -t fuzzing -t miscellaneous -t misconfiguration/ -t network -t takeovers -t vulnerabilities/ -t technologies | anew output/nuclei_output.txt
+          subfinder -silent -dL input/domains.txt -config config/subfinder-config.yaml | anew output/passive_subdomains.txt | naabu -silent | anew output/ports.txt | httpx -title -content-length -status-code -silent | anew output/active_urls.txt | nuclei -silent -t cves/ -t default-logins/ -t exposed-panels -t fuzzing -t miscellaneous -t misconfiguration/ -t network -t takeovers -t vulnerabilities/ -t technologies | anew output/nuclei_output.txt
         shell: bash
 
       - name: Sorting the output results
