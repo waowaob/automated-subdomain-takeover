@@ -1,2 +1,7 @@
-t00ls.net
-baidu.com
+faceid.com
+faceplusplus.com.cn
+faceplusplus.com
+megvii.com
+brainpp.cn
+megviirobotics.com
+megvii-inc.com
