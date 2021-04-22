@@ -1,4 +1,4 @@
-name: scan-actions-max
+name: scan-actions
 
 on:
 #    schedule:
@@ -22,8 +22,8 @@ jobs:
         id: cache-go
         uses: actions/cache@v2
         with:
-          path: /home/runners/go
-          key: ${{ runners.os }}-go
+          path: /home/runner/go
+          key: ${{ runner.os }}-go
 
       - name: Setting up ProjectDiscovery tools
         if: steps.cache-go.outputs.cache-hit != 'true'
