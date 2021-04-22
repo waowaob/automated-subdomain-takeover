@@ -1,36 +1,69 @@
-# This is a basic workflow to help you get started with Actions
+name: scan-actions-max
 
-name: CI
-
-# Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+#    schedule:
+#      - cron: '0 0 * * *'
+# Remove both comments to run this action on daily basis.
+    workflow_dispatch:
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Checkout Repo
+        uses: actions/checkout@master
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Setup golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Cache Go
+        id: cache-go
+        uses: actions/cache@v2
+        with:
+          path: /home/runners/go
+          key: ${{ runners.os }}-go
+
+      - name: Setting up ProjectDiscovery tools
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        env:
+          GO111MODULE: on
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          go get -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
+          go get -v github.com/projectdiscovery/naabu/v2/cmd/naabu
+          go get -v github.com/projectdiscovery/httpx/cmd/httpx
+          go get -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
+          go get -u github.com/tomnomnom/anew
+        shell: bash
+
+      - name: Running Scanner
+        run: |
+          sudo apt install libpcap-dev
+          nuclei -update-templates
+          subfinder -silent -dL input/domains.txt -config config/subfinder-config.yaml | anew output/passive_subdomains.txt | naabu -silent | anew output/port.txt | httpx -title -content-length -status-code -silent | anew output/active_urls.txt | nuclei -silent -t cves/ -t default-logins/ -t exposed-panels -t fuzzing -t miscellaneous -t misconfiguration/ -t network -t takeovers -t vulnerabilities/ -t technologies | anew output/nuclei_output.txt
+        shell: bash
+
+      - name: Sorting the output results
+        run: |
+          find output -type f -exec sort {} -o {} \;
+        shell: bash
+
+      - name: Create local changes
+        run: |
+          git add output/passive_subdomains.txt
+          git add output/port.txt
+          git add output/active_urls.txt
+          git add output/nuclei_output.txt
+
+      - name: Commit results to Github
+        run: |
+          git config --local user.email "xxx@xxx.io"
+          git config --global user.name "xxx"
+          git commit -m "Scan-Actions report" -a --allow-empty
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
