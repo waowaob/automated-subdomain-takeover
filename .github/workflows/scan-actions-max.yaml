@@ -18,15 +18,15 @@ jobs:
         with:
           go-version: 1.14
 
-      - name: Cache Go
-        id: cache-go
+      - name: Cache_max Go
+        id: cache_max-go
         uses: actions/cache@v2
         with:
-          path: /home/runner/go
-          key: ${{ runner.os }}-go
+          path: /home/runner_max/go
+          key: ${{ runner_max.os }}-go
 
       - name: Setting up ProjectDiscovery tools
-        if: steps.cache-go.outputs.cache-hit != 'true'
+        if: steps.cache_max-go.outputs.cache-hit != 'true'
         env:
           GO111MODULE: on
         run: |
